@@ -6,40 +6,22 @@
 struct Section;
 struct Array;
 
+
 typedef struct {
     char *key;
     char *value;
 } KeyValuePair;
 
 
-typedef struct 
-{
-    Section* data;
-    size_t used;
-    size_t size;
-} Array;
 
-typedef struct {
+typedef struct Section{
     char *name;
-    Array *pairs;
+    KeyValuePair* pairs;
     int numberOfPairs;
+    int sizeOfPairs;
 } Section;
 
-void initArray(Array* a,size_t initialSize)
-{
-    a->data = malloc(initialSize * sizeof(Section));
-    a->used =0;
-    a->size = initialSize;
-}
-void insertArray(Array* a,Section data)
-{
-    if (a->used == a->size)
-    {
-        a->size *= 2;
-        a->data = realloc(a->data,a->size * sizeof(Section));
-    }
-    a->data[a->used++] = data;
-}
+
 
 void invalidSymbols(char* txt,char* name)
 {
@@ -64,6 +46,37 @@ void ifmissing(char* arg,char* name)
     }
 }
 
+int addSection(Section** a,int i, int n, Section* element)
+{
+    if(i>=n)
+    {
+        n+=1;
+        Section* b  = realloc(*a,n*sizeof(Section));
+        if(!b)
+        {
+            perror("realloc");
+            exit(1);
+        }
+    }
+    (*a)[i] = *element;
+    return n;
+}
+int addPair(KeyValuePair** a,int i, int n, KeyValuePair* element)
+{
+    if(i>=n)
+    {
+        n+=1;
+        KeyValuePair* b  = realloc(*a,n*sizeof(KeyValuePair));
+        if(!b)
+        {
+            perror("realloc");
+            exit(1);
+        }
+    }
+    (*a)[i] = *element;
+    return n;
+}
+
 
 int main(int argc, char* argv[])
 {
@@ -72,13 +85,16 @@ int main(int argc, char* argv[])
     char path[20];
 
     //Initialize dynamic array
-    Array sections;
-    initArray(&sections,100);
+    int size_sections = 20;
+    int i = 0; //numer of section
+    Section* sections = malloc(size_sections*(sizeof(Section)));
+
+    
+
     
     strcpy(path,argv[1]);
     fptr = fopen(path,"r");
     
-    int i = -1; //numer of section
     
     char* tokPtr;
     tokPtr = strtok(argv[2],".");
@@ -100,25 +116,26 @@ int main(int argc, char* argv[])
             if (firstLetter == '[')
             {
                 //Reading section
-                Array atributes;
-                initArray(&atributes,5);
-
+               
                 char* tokSectionPtr = strtok(content,"[]");
                 Section sec;
                 sec.name = strdup(tokSectionPtr);
-
                 ifmissing(sec.name,"section");
                 invalidSymbols(sec.name,"section");
                 sec.numberOfPairs = 0;
-
-                insertArray(&sections,sec);
+                size_sections = addSection(&sections,i,size_sections,&sec);
                 i++;
-                readSection = strdup(tokSectionPtr);
-                ifmissing(readSection,"section");
-                invalidSymbols(readSection,"section");
+
+                //Initialize KeyValuePairs array
+                sec.sizeOfPairs = 5;
+                KeyValuePair* pairsArray = malloc(sec.sizeOfPairs*(sizeof(KeyValuePair)));
+                sections[i].pairs = pairsArray;
+                
+
 
             }else if (firstLetter == '\n')
             {
+                //Empty line
                 continue;
             }
             else
@@ -131,29 +148,22 @@ int main(int argc, char* argv[])
                 tokPtr2 = strtok(content," ");
 
                 pair.key = strdup(tokPtr2);
-                readkey = strdup(tokPtr2);
                 tokPtr2 = strtok(NULL," "); // "="
                 tokPtr2 = strtok(NULL," \n");
-                readValue = strdup(tokPtr2);
                 pair.value = strdup(tokPtr2);
                 
                 ifmissing(pair.key,"key");
                 ifmissing(pair.value,"value");
                 invalidSymbols(pair.key,"key");
                 invalidSymbols(pair.value,"value");
-                // insertArray(sections.data[i].pairs
-                ifmissing(readkey,"key");
-                ifmissing(readValue,"value");
-                invalidSymbols(readkey,"key");
-                invalidSymbols(readValue,"value");
 
-
+                sections[i].numberOfPairs = addPair(&sections[i].pairs, sections[i].numberOfPairs, sections[i].sizeOfPairs, &pair);                
             }
             
 
-            if (readkey != NULL && readSection != NULL)
-                if (strcmp(readSection,section) ==0 && strcmp(readkey,key) ==0)
-                    printf("%s %s %s\n",readSection,readkey,readValue);
+            // if (readkey != NULL && readSection != NULL)
+            //     if (strcmp(readSection,section) ==0 && strcmp(readkey,key) ==0)
+            //         printf("%s %s %s\n",readSection,readkey,readValue);
         }    
     }
     else
