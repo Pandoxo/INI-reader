@@ -46,12 +46,12 @@ void ifmissing(char* arg,char* name)
     }
 }
 
-int addSection(Section** a,int i, int n, Section* element)
+int addSection(Section** a,int i, int capacity, Section* element)
 {
-    if(i>=n)
+    if(i>=capacity)
     {
-        n+=1;
-        Section* b  = realloc(*a,n*sizeof(Section));
+        capacity *=2;
+        Section* b  = realloc(*a,capacity*sizeof(Section));
         if(!b)
         {
             perror("realloc");
@@ -59,14 +59,14 @@ int addSection(Section** a,int i, int n, Section* element)
         }
     }
     (*a)[i] = *element;
-    return n;
+    return capacity;
 }
-int addPair(KeyValuePair** a,int i, int n, KeyValuePair* element)
+int addPair(KeyValuePair** a,int i, int capacity, KeyValuePair* element)
 {
-    if(i>=n)
+    if(i>=capacity)
     {
-        n+=1;
-        KeyValuePair* b  = realloc(*a,n*sizeof(KeyValuePair));
+        capacity *=2;
+        KeyValuePair* b  = realloc(*a,capacity*sizeof(KeyValuePair));
         if(!b)
         {
             perror("realloc");
@@ -74,7 +74,7 @@ int addPair(KeyValuePair** a,int i, int n, KeyValuePair* element)
         }
     }
     (*a)[i] = *element;
-    return n;
+    return capacity;
 }
 
 
@@ -87,7 +87,7 @@ int main(int argc, char* argv[])
     //Initialize dynamic array
     int size_sections = 20;
     int i = 0; //numer of section
-    Section* sections = malloc(size_sections*(sizeof(Section)));
+    Section* sections = malloc(size_sections*sizeof(Section));
 
     
 
@@ -96,46 +96,47 @@ int main(int argc, char* argv[])
     fptr = fopen(path,"r");
     
     
-    char* tokPtr;
-    tokPtr = strtok(argv[2],".");
-    char* section = tokPtr;
-    tokPtr = strtok(NULL,",");
-    char* key= tokPtr;
+    // char* tokPtr;
+    // tokPtr = strtok(argv[2],".");
+    // char* section = tokPtr;
+    // tokPtr = strtok(NULL,",");
+    // char* key= tokPtr;
     // printf("%s\n",section);
     // printf("%s\n",key);
     // printf("%s\n\n",path);
     if (fptr != NULL)
     {
         printf("\nfile opened\n");
-        char* readSection;
         while (fgets(content,63,fptr))
         {
-            char firstLetter = content[0];    
-            char* readkey = NULL;
-            char* readValue = NULL;
+            char firstLetter = content[0];   
+            printf("%s",content); 
             if (firstLetter == '[')
             {
                 //Reading section
                
                 char* tokSectionPtr = strtok(content,"[]");
+
                 Section sec;
                 sec.name = strdup(tokSectionPtr);
+                sec.numberOfPairs = 0;
+                sec.sizeOfPairs = 5;
+
                 ifmissing(sec.name,"section");
                 invalidSymbols(sec.name,"section");
-                sec.numberOfPairs = 0;
                 size_sections = addSection(&sections,i,size_sections,&sec);
-                i++;
-
-                //Initialize KeyValuePairs array
-                sec.sizeOfPairs = 5;
-                KeyValuePair* pairsArray = malloc(sec.sizeOfPairs*(sizeof(KeyValuePair)));
-                sections[i].pairs = pairsArray;
                 
 
+                //Initialize KeyValuePairs array
+                KeyValuePair* pairsArray = malloc(sec.sizeOfPairs*sizeof(KeyValuePair));
+                sections[i].pairs = pairsArray;
+
+                
 
             }else if (firstLetter == '\n')
             {
                 //Empty line
+                i++;
                 continue;
             }
             else
@@ -156,15 +157,23 @@ int main(int argc, char* argv[])
                 ifmissing(pair.value,"value");
                 invalidSymbols(pair.key,"key");
                 invalidSymbols(pair.value,"value");
-
-                sections[i].numberOfPairs = addPair(&sections[i].pairs, sections[i].numberOfPairs, sections[i].sizeOfPairs, &pair);                
-            }
-            
-
+                
+                sections[i].sizeOfPairs = addPair(&sections[i].pairs, sections[i].numberOfPairs, sections[i].sizeOfPairs, &pair);
+                sections[i].numberOfPairs++;                
+            }     
             // if (readkey != NULL && readSection != NULL)
             //     if (strcmp(readSection,section) ==0 && strcmp(readkey,key) ==0)
             //         printf("%s %s %s\n",readSection,readkey,readValue);
+            // if (sections[0].numberOfPairs == 4)
+            // {
+            //     for (int j = 0;j <4;j++)
+            //     {
+            //         printf("key: %s value: %s\n",sections[0].pairs[j].key,sections[0].pairs[j].value);
+            //     }
+            //     exit(0);
+            // }
         }    
+
     }
     else
         printf("file open unsuccessful");
