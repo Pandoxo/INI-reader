@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 struct Section;
 struct Array;
@@ -94,6 +95,14 @@ char* findValue(Section* sections,int size,char* section, char* key)
 
 }
 
+//int isText(char* txt)
+//{
+//    bool isNum = false;
+//    bool isTxt = false;
+//
+//    for(int i = 0; txt[i] !=)
+//}
+
 char* readLine(FILE* fptr)
 {
     int bufsize = 64;
@@ -163,13 +172,16 @@ int main(int argc, char* argv[])
             }
             else
             {
-                char* tokPtr2 = strtok(line, " ");
-                //har* equalSign = strtok(NULL, " ");
-                char* valPtr = strtok(NULL, "\n");
-
                 KeyValuePair pair;
-                pair.key = strdup(tokPtr2);
-                pair.value = strdup(valPtr);
+                
+                char* tokPtr;
+                tokPtr = strtok(line, " ");
+                pair.key = strdup(tokPtr);
+                tokPtr = strtok(NULL," ");//=
+                tokPtr = strtok(NULL," \n");
+                pair.value = strdup(tokPtr);
+                
+
 
                 ifmissing(pair.key, "key");
                 ifmissing(pair.value, "value");
@@ -199,23 +211,7 @@ int main(int argc, char* argv[])
     invalidSymbols(sectionName, "section");
     invalidSymbols(keyName, "key");
 
-    for (int s = 0; s <= i; s++)
-    {
-        if (strcmp(sections[s].name, sectionName) == 0)
-        {
-            for (int p = 0; p < sections[s].numberOfPairs; p++)
-            {
-                if (strcmp(sections[s].pairs[p].key, keyName) == 0)
-                {
-                    printf("%s\n", sections[s].pairs[p].value);
-                    return 0;
-                }
-            }
-            printf("key not found\n");
-            return 1;
-        }
-    }
-
-    printf("section not found\n");
-    return 1;
+    char* value = findValue(sections,sections->sizeOfPairs,sectionName,keyName);
+    printf("Searched value: %s",value );
+    return 0;
 }
