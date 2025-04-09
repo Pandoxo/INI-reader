@@ -1,182 +1,200 @@
 #include <stdio.h>
-#include<stdlib.h>
+#include <stdlib.h>
 #include <string.h>
-
 
 struct Section;
 struct Array;
-
 
 typedef struct {
     char *key;
     char *value;
 } KeyValuePair;
 
-
-
-typedef struct Section{
+typedef struct Section {
     char *name;
     KeyValuePair* pairs;
     int numberOfPairs;
     int sizeOfPairs;
 } Section;
 
-
-
-void invalidSymbols(char* txt,char* name)
+void invalidSymbols(char* txt, char* name)
 {
-    
-    for(int i = 0; txt[i] != '\0';i++)
+    for (int i = 0; txt[i] != '\0'; i++)
     {
         char c = txt[i];
-        if ( !((c>47 && c<58) || (c>64 && c<133) || (c>96 &&c<123) || (c=='-')) )
+        if (!((c > 47 && c < 58) || (c > 64 && c < 133) || (c > 96 && c < 123) || (c == '-')))
         {
-            printf("invalid %s: %s\n",name,txt);
+            printf("invalid %s: %s\n", name, txt);
             exit(1);
         }
     }
 }
 
-void ifmissing(char* arg,char* name)
+void ifmissing(char* arg, char* name)
 {
-    if(arg == NULL)
+    if (arg == NULL)
     {
-        printf("%s missing",name);
+        printf("%s missing", name);
         exit(1);
     }
 }
 
-int addSection(Section** a,int i, int capacity, Section* element)
+int addSection(Section** a, int i, int capacity, Section* element)
 {
-    if(i>=capacity)
+    if (i >= capacity)
     {
-        capacity *=2;
-        Section* b  = realloc(*a,capacity*sizeof(Section));
-        if(!b)
+        capacity *= 2;
+        Section* b = realloc(*a, capacity * sizeof(Section));
+        if (!b)
         {
             perror("realloc");
             exit(1);
         }
-    }
-    (*a)[i] = *element;
-    return capacity;
-}
-int addPair(KeyValuePair** a,int i, int capacity, KeyValuePair* element)
-{
-    if(i>=capacity)
-    {
-        capacity *=2;
-        KeyValuePair* b  = realloc(*a,capacity*sizeof(KeyValuePair));
-        if(!b)
-        {
-            perror("realloc");
-            exit(1);
-        }
+        *a = b;
     }
     (*a)[i] = *element;
     return capacity;
 }
 
+int addPair(KeyValuePair** a, int i, int capacity, KeyValuePair* element)
+{
+    if (i >= capacity)
+    {
+        capacity *= 2;
+        KeyValuePair* b = realloc(*a, capacity * sizeof(KeyValuePair));
+        if (!b)
+        {
+            perror("realloc");
+            exit(1);
+        }
+        *a = b;
+    }
+    (*a)[i] = *element;
+    return capacity;
+}
+
+char* readLine(FILE* fptr)
+{
+    int bufsize = 64;
+    int pos = 0;
+    char* buffer = malloc(bufsize);
+    if (!buffer) { perror("malloc"); exit(1); }
+
+    int c;
+    while ((c = fgetc(fptr)) != EOF && c != '\n')
+    {
+        buffer[pos++] = c;
+        if (pos >= bufsize)
+        {
+            bufsize *= 2;
+            buffer = realloc(buffer, bufsize);
+            if (!buffer) { perror("realloc"); exit(1); }
+        }
+    }
+
+    if (c == EOF && pos == 0) {
+        free(buffer);
+        return NULL;
+    }
+
+    buffer[pos] = '\0';
+    return buffer;
+}
 
 int main(int argc, char* argv[])
 {
     FILE *fptr;
-    char content[63];
-    char path[20];
-
-    //Initialize dynamic array
+    char path[256];
     int size_sections = 20;
-    int i = 0; //numer of section
-    Section* sections = malloc(size_sections*sizeof(Section));
+    int i = -1;
+    Section* sections = malloc(size_sections * sizeof(Section));
 
-    
+    strcpy(path, argv[1]);
+    fptr = fopen(path, "r");
 
-    
-    strcpy(path,argv[1]);
-    fptr = fopen(path,"r");
-    
-    
-    // char* tokPtr;
-    // tokPtr = strtok(argv[2],".");
-    // char* section = tokPtr;
-    // tokPtr = strtok(NULL,",");
-    // char* key= tokPtr;
-    // printf("%s\n",section);
-    // printf("%s\n",key);
-    // printf("%s\n\n",path);
     if (fptr != NULL)
     {
-        printf("\nfile opened\n");
-        while (fgets(content,63,fptr))
+        char* line;
+        while ((line = readLine(fptr)) != NULL)
         {
-            char firstLetter = content[0];   
-            printf("%s",content); 
-            if (firstLetter == '[')
+            if (line[0] == '[')
             {
-                //Reading section
-               
-                char* tokSectionPtr = strtok(content,"[]");
+                char* tokSectionPtr = strtok(line, "[]");
 
                 Section sec;
                 sec.name = strdup(tokSectionPtr);
                 sec.numberOfPairs = 0;
                 sec.sizeOfPairs = 5;
 
-                ifmissing(sec.name,"section");
-                invalidSymbols(sec.name,"section");
-                size_sections = addSection(&sections,i,size_sections,&sec);
-                
+                ifmissing(sec.name, "section");
+                invalidSymbols(sec.name, "section");
 
-                //Initialize KeyValuePairs array
-                KeyValuePair* pairsArray = malloc(sec.sizeOfPairs*sizeof(KeyValuePair));
-                sections[i].pairs = pairsArray;
-
-                
-
-            }else if (firstLetter == '\n')
-            {
-                //Empty line
                 i++;
+                size_sections = addSection(&sections, i, size_sections, &sec);
+
+                KeyValuePair* pairsArray = malloc(sec.sizeOfPairs * sizeof(KeyValuePair));
+                sections[i].pairs = pairsArray;
+            }
+            else if (line[0] == '\0' || line[0] == ';')
+            {
+                free(line);
                 continue;
             }
             else
             {
+                char* tokPtr2 = strtok(line, " ");
+                char* equalSign = strtok(NULL, " ");
+                char* valPtr = strtok(NULL, "\n");
+
                 KeyValuePair pair;
-
-                //Reading key and value
-                char* tokPtr2;
-                
-                tokPtr2 = strtok(content," ");
-
                 pair.key = strdup(tokPtr2);
-                tokPtr2 = strtok(NULL," "); // "="
-                tokPtr2 = strtok(NULL," \n");
-                pair.value = strdup(tokPtr2);
-                
-                ifmissing(pair.key,"key");
-                ifmissing(pair.value,"value");
-                invalidSymbols(pair.key,"key");
-                invalidSymbols(pair.value,"value");
-                
-                sections[i].sizeOfPairs = addPair(&sections[i].pairs, sections[i].numberOfPairs, sections[i].sizeOfPairs, &pair);
-                sections[i].numberOfPairs++;                
-            }     
-            // if (readkey != NULL && readSection != NULL)
-            //     if (strcmp(readSection,section) ==0 && strcmp(readkey,key) ==0)
-            //         printf("%s %s %s\n",readSection,readkey,readValue);
-            // if (sections[0].numberOfPairs == 4)
-            // {
-            //     for (int j = 0;j <4;j++)
-            //     {
-            //         printf("key: %s value: %s\n",sections[0].pairs[j].key,sections[0].pairs[j].value);
-            //     }
-            //     exit(0);
-            // }
-        }    
+                pair.value = strdup(valPtr);
 
+                ifmissing(pair.key, "key");
+                ifmissing(pair.value, "value");
+                invalidSymbols(pair.key, "key");
+                invalidSymbols(pair.value, "value");
+
+                sections[i].sizeOfPairs = addPair(&sections[i].pairs, sections[i].numberOfPairs, sections[i].sizeOfPairs, &pair);
+                sections[i].numberOfPairs++;
+            }
+            free(line);
+        }
+        fclose(fptr);
     }
     else
+    {
         printf("file open unsuccessful");
-    
-    printf("hello");
+        return 1;
+    }
+
+    char* tokPtr = strtok(argv[2], ".");
+    char* sectionName = tokPtr;
+    tokPtr = strtok(NULL, ".");
+    char* keyName = tokPtr;
+
+    ifmissing(sectionName, "section");
+    ifmissing(keyName, "key");
+    invalidSymbols(sectionName, "section");
+    invalidSymbols(keyName, "key");
+
+    for (int s = 0; s <= i; s++)
+    {
+        if (strcmp(sections[s].name, sectionName) == 0)
+        {
+            for (int p = 0; p < sections[s].numberOfPairs; p++)
+            {
+                if (strcmp(sections[s].pairs[p].key, keyName) == 0)
+                {
+                    printf("%s\n", sections[s].pairs[p].value);
+                    return 0;
+                }
+            }
+            printf("key not found\n");
+            return 1;
+        }
+    }
+
+    printf("section not found\n");
+    return 1;
 }
