@@ -73,6 +73,27 @@ int addPair(KeyValuePair** a, int i, int capacity, KeyValuePair* element)
     return capacity;
 }
 
+char* findValue(Section* sections,int size,char* section, char* key)
+{
+    for (int i = 0; i< size; i++)
+    {
+        if(strcmp(sections[i].name,section)==0)
+        {
+            for(int j = 0; j< sections[i].numberOfPairs; j++)
+            {
+                KeyValuePair pair = sections[i].pairs[j]; 
+                char* key2 = pair.key;
+                if (strcmp(key,key2)==0)
+                {
+                    return pair.value;
+                }
+            }
+        }
+    }
+    return "Not Found";
+
+}
+
 char* readLine(FILE* fptr)
 {
     int bufsize = 64;
@@ -143,7 +164,7 @@ int main(int argc, char* argv[])
             else
             {
                 char* tokPtr2 = strtok(line, " ");
-                char* equalSign = strtok(NULL, " ");
+                //har* equalSign = strtok(NULL, " ");
                 char* valPtr = strtok(NULL, "\n");
 
                 KeyValuePair pair;
