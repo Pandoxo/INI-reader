@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <ctype.h>
 
 struct Section;
 struct Array;
@@ -95,13 +96,16 @@ char* findValue(Section* sections,int size,char* section, char* key)
 
 }
 
-//int isText(char* txt)
-//{
-//    bool isNum = false;
-//    bool isTxt = false;
-//
-//    for(int i = 0; txt[i] !=)
-//}
+int isNumber(char* txt)
+{
+   for(int i = 0; txt[i] !='\0';i++)
+   {
+    if(!isdigit(txt[i]))
+        return 0;
+   }
+   return 1;
+
+}
 
 char* readLine(FILE* fptr)
 {
@@ -131,16 +135,51 @@ char* readLine(FILE* fptr)
     return buffer;
 }
 
+void eval(char* arg1,char op,char* arg2)
+{
+    //int result;
+    switch (op)
+    {
+    case '*':
+        //result = arg1 * arg2;
+        break;
+    case '+':
+        printf("%s%s",arg1,arg2);
+        break;
+    case '-':
+        //result = arg1 - arg2;
+        break;
+    case '/':
+        //result = arg1 / arg2; 
+        break;
+    default:
+        printf("\nInvalid operator");
+        exit(1);
+    }
+}
+
+int isKeyValuePair(char* arg)
+{
+    if(strchr(arg,'.') != NULL && isNumber(arg) == 0)
+        return 1;
+    return 0;
+}
+
+
 int main(int argc, char* argv[])
 {
+   
+
     FILE *fptr;
     char path[256];
     int size_sections = 20;
     int i = -1;
     Section* sections = malloc(size_sections * sizeof(Section));
-
-    strcpy(path, argv[1]);
+    if (argv[1] != NULL)
+        strcpy(path, argv[1]);
     fptr = fopen(path, "r");
+
+    
 
     if (fptr != NULL)
     {
@@ -201,17 +240,36 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    char* tokPtr = strtok(argv[2], ".");
-    char* sectionName = tokPtr;
-    tokPtr = strtok(NULL, ".");
-    char* keyName = tokPtr;
+    bool exp = false;
+    if (strcmp(argv[2],"expression") == 0)
+    {
+        char* expPtr;
+        expPtr =  strtok(argv[3]," ");
+        char* var1 = strdup(expPtr);
+        expPtr = strtok(NULL," ");
+        char* operator = strdup(expPtr);
+        expPtr = strtok(NULL," ");
+        char* var2 = strdup(expPtr);
 
-    ifmissing(sectionName, "section");
-    ifmissing(keyName, "key");
-    invalidSymbols(sectionName, "section");
-    invalidSymbols(keyName, "key");
+        printf("%s %s %s\n",var1,operator,var2);
+        invalidSymbols(var1,"var1");
+        invalidSymbols(var2,var2);
 
-    char* value = findValue(sections,sections->sizeOfPairs,sectionName,keyName);
-    printf("Searched value: %s",value );
+
+    }else{
+
+        char* tokPtr = strtok(argv[2], ".");
+        char* sectionName = tokPtr;
+        tokPtr = strtok(NULL, ".");
+        char* keyName = tokPtr;
+        
+        ifmissing(sectionName, "section");
+        ifmissing(keyName, "key");
+        invalidSymbols(sectionName, "section");
+        invalidSymbols(keyName, "key");
+
+        char* value = findValue(sections,sections->sizeOfPairs,sectionName,keyName);
+        printf("Searched value: %s",value );
+    }
     return 0;
 }
