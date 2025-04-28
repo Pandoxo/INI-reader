@@ -93,7 +93,6 @@ char* findValue(Section* sections,int size,char* section, char* key)
         }
     }
     return "Not Found";
-
 }
 
 int isNumber(char* txt)
@@ -104,7 +103,6 @@ int isNumber(char* txt)
         return 0;
    }
    return 1;
-
 }
 
 char* readLine(FILE* fptr)
@@ -137,24 +135,44 @@ char* readLine(FILE* fptr)
 
 void eval(char* arg1,char op,char* arg2)
 {
-    //int result;
-    switch (op)
+    bool var1_is_number = isNumber(arg1);
+    bool var2_is_number = isNumber(arg2);
+
+    if (var1_is_number && var2_is_number)
     {
-    case '*':
-        //result = arg1 * arg2;
-        break;
-    case '+':
-        printf("%s%s",arg1,arg2);
-        break;
-    case '-':
-        //result = arg1 - arg2;
-        break;
-    case '/':
-        //result = arg1 / arg2; 
-        break;
-    default:
-        printf("\nInvalid operator");
-        exit(1);
+        int a = atoi(arg1);
+        int b = atoi(arg2);
+        int result = 0;
+
+        switch (op)
+        {
+        case '+': result = a + b; break;
+        case '-': result = a - b; break;
+        case '*': result = a * b; break;
+        case '/':
+            if (b == 0) {
+                printf("division by zero");
+                exit(1);
+            }
+            result = a / b;
+            break;
+        default:
+            printf("invalid operator");
+            exit(1);
+        }
+        printf("Result: %d\n", result);
+    }
+    else
+    {
+        if (op == '+')
+        {
+            printf("Result: %s%s\n", arg1, arg2);
+        }
+        else
+        {
+            printf("invalid operation for non-numbers\n");
+            exit(1);
+        }
     }
 }
 
@@ -165,11 +183,8 @@ int isKeyValuePair(char* arg)
     return 0;
 }
 
-
 int main(int argc, char* argv[])
 {
-   
-
     FILE *fptr;
     char path[256];
     int size_sections = 20;
@@ -178,8 +193,6 @@ int main(int argc, char* argv[])
     if (argv[1] != NULL)
         strcpy(path, argv[1]);
     fptr = fopen(path, "r");
-
-    
 
     if (fptr != NULL)
     {
@@ -219,8 +232,6 @@ int main(int argc, char* argv[])
                 tokPtr = strtok(NULL," ");//=
                 tokPtr = strtok(NULL," \n");
                 pair.value = strdup(tokPtr);
-                
-
 
                 ifmissing(pair.key, "key");
                 ifmissing(pair.value, "value");
@@ -253,11 +264,26 @@ int main(int argc, char* argv[])
 
         printf("%s %s %s\n",var1,operator,var2);
         invalidSymbols(var1,"var1");
-        invalidSymbols(var2,var2);
+        invalidSymbols(var2,"var2");
 
+        if (isKeyValuePair(var1)) {
+            char* copy = strdup(var1);
+            char* sect = strtok(copy, ".");
+            char* key = strtok(NULL, ".");
+            var1 = findValue(sections, size_sections, sect, key);
+        }
 
-    }else{
+        if (isKeyValuePair(var2)) {
+            char* copy2 = strdup(var2);
+            char* sect2 = strtok(copy2, ".");
+            char* key2 = strtok(NULL, ".");
+            var2 = findValue(sections, size_sections, sect2, key2);
+        }
 
+        eval(var1, operator[0], var2);
+    }
+    else
+    {
         char* tokPtr = strtok(argv[2], ".");
         char* sectionName = tokPtr;
         tokPtr = strtok(NULL, ".");
